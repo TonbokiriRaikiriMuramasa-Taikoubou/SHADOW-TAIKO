@@ -1,4 +1,4 @@
-# Shadow-TAIKO 🥁
+# SHADOW-TAIKO 🥁
 
 A web-based rhythm game inspired by *osu!* and traditional drumming games. Drop any `mp4` video, and it transforms into a playable rhythm track directly in your browser! 
 
