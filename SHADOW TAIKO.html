@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHADOW TAIKO — Rhythm Edit</title>
+<style>
+:root{--red:#ff3b55;--blue:#55aaff;--gold:#ffd166}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;
+  font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+button,input{font:inherit}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;
+  transform:translate(-50%,-50%);transform-origin:center;overflow:hidden;background:#050505}
+#view,#fx{position:absolute;inset:0;width:1920px;height:1080px}
+#view{filter:grayscale(1) contrast(1.7)}
+#fx{z-index:3;pointer-events:none}
+.topline{position:absolute;z-index:5;top:42px;left:70px;right:70px;
+  display:flex;justify-content:space-between;font-size:22px;letter-spacing:.18em;
+  text-shadow:0 2px 8px #000}
+.topline strong{color:var(--red)}
+#clock{font-variant-numeric:tabular-nums}
+#hud{position:absolute;z-index:5;top:90px;left:70px;display:flex;gap:30px;
+  align-items:baseline;font-size:20px;letter-spacing:.12em;
+  text-shadow:0 2px 8px #000;opacity:0;transition:opacity .2s}
+#hud.on{opacity:1}
+#hud b{color:var(--gold);font-size:30px;font-variant-numeric:tabular-nums}
+#judge{position:absolute;z-index:7;top:140px;left:50%;transform:translateX(-50%);
+  font-size:64px;font-weight:900;letter-spacing:.12em;text-shadow:0 3px 14px #000;
+  opacity:0;pointer-events:none}
+#judge.show{animation:judgePop .45s ease-out}
+#judge.perfect{color:var(--gold)}
+#judge.good{color:#fff}
+#judge.miss{color:#aaa}
+@keyframes judgePop{
+  0%{opacity:0;transform:translate(-50%,12px) scale(.8)}
+  25%{opacity:1;transform:translate(-50%,0) scale(1.08)}
+  100%{opacity:0;transform:translate(-50%,-30px) scale(1)}
+}
+#progress{position:absolute;z-index:8;left:0;bottom:0;height:7px;width:0;
+  background:linear-gradient(90deg,var(--blue),var(--gold),var(--red));
+  box-shadow:0 0 18px var(--red)}
+#seekBar{display:none;position:absolute;z-index:11;left:80px;bottom:76px;
+  width:calc(100% - 160px);accent-color:var(--red);cursor:pointer}
+#seekBar.on{display:block}
+#touchKeys{position:absolute;z-index:9;left:50%;bottom:105px;
+  transform:translateX(-50%);display:none;gap:22px}
+#touchKeys.on{display:flex}
+#touchKeys button{min-width:150px;height:82px;border-radius:18px;background:#141414e8;
+  color:#fff;font-size:23px;font-weight:900;border:3px solid #fff9;touch-action:manipulation}
+#touchKeys button:first-child{border-color:var(--red)}
+#touchKeys button:last-child{border-color:var(--blue)}
+#touchKeys button:active{transform:scale(.96)}
+#controls{position:absolute;z-index:10;left:50%;bottom:20px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:14px;font-size:18px;text-shadow:0 2px 8px #000}
+button{padding:13px 24px;border-radius:999px;border:1px solid #ffffff88;
+  background:#151515e8;color:#fff;font-size:19px;font-weight:750;cursor:pointer}
+button:hover{border-color:var(--gold);color:var(--gold)}
+button:disabled{opacity:.4;cursor:default}
+#volume{width:130px;accent-color:var(--gold)}
+.screen{position:absolute;z-index:20;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:30px;text-align:center;
+  background:radial-gradient(ellipse,#222 0%,#080808 68%,#000 100%)}
+.card{width:min(1120px,94%);max-height:96%;overflow:auto;padding:32px;
+  border:1px solid #ffffff44;border-radius:24px;background:#090909ed;
+  box-shadow:0 20px 90px #000c}
+.screen h1{margin:0;font-size:78px;letter-spacing:.1em}
+.screen h1 span{color:var(--red)}
+.screen h2{margin:0 0 18px;font-size:54px;color:var(--gold)}
+.screen p{color:#ddd;font-size:20px;line-height:1.6}
+.hint{color:#aaa;font-size:15px;margin:8px 0}
+.row,.pickers,.actions,.keyRows{display:flex;flex-wrap:wrap;justify-content:center;
+  align-items:center;gap:12px;margin-top:12px}
+.row label{display:flex;align-items:center;gap:8px}
+input[type=number]{width:100px;padding:8px;border-radius:8px;background:#111;
+  color:#fff;border:1px solid #888}
+input[type=file]{max-width:320px;color:#ddd}
+.pickers button.selected{color:var(--gold);border-color:var(--gold);
+  box-shadow:0 0 18px #ffd16633}
+#keyConfig,#seSettings{max-width:790px;margin:15px auto 0;padding:14px;
+  border:1px solid #ffffff2b;border-radius:16px;background:#ffffff08}
+.keyRow{min-width:225px;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:8px 12px;border-radius:12px;background:#ffffff0a}
+.keyRow strong{font-size:18px}
+.keyValue{min-width:80px;color:var(--gold);font-weight:800}
+.keyRow button,#seSettings button{padding:8px 13px;font-size:15px}
+#seSettings label{display:flex;align-items:center;gap:8px}
+#seSettings input[type=checkbox]{accent-color:var(--gold)}
+#seSettings input[type=range]{width:120px;accent-color:var(--gold)}
+#bindStatus,#chartStatus,#eggStatus,#seStatus{min-height:1.4em;color:var(--gold)}
+#playBtn{margin-top:18px;padding:17px 54px;font-size:28px;border:2px solid var(--red)}
+.playerModeOption{display:inline-flex;align-items:center;gap:8px;margin-top:12px;
+  color:#ddd;font-size:16px}
+.playerModeOption input{accent-color:var(--red);transform:scale(1.2)}
+#result{font-size:23px;line-height:1.8;color:#ddd}
+#result b{color:var(--gold)}
+#credits{max-width:950px;margin:16px auto 0;color:#aaa;font-size:14px;line-height:1.8}
+#video{display:none}
+@media(max-width:700px){
+  .card{padding:18px}
+  .screen h1{font-size:44px}
+  .screen h2{font-size:32px}
+  .screen p{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="view" width="1920" height="1080"></canvas>
+  <canvas id="fx" width="1920" height="1080"></canvas>
+
+  <div class="topline">
+    <div><strong>SHADOW TAIKO</strong> &nbsp; RHYTHM EDIT</div>
+    <div id="clock">0:00</div>
+  </div>
+
+  <div id="hud">SCORE <b id="scoreVal">0</b> COMBO <b id="comboVal">0</b></div>
+  <div id="judge"></div>
+  <div id="progress"></div>
+  <input id="seekBar" type="range" min="0" max="1000" value="0" aria-label="曲の再生位置">
+  <div id="touchKeys"></div>
+
+  <div id="controls">
+    <button id="pauseBtn" hidden>Ⅱ 一時停止</button>
+    <button id="fullBtn">⛶ 全画面</button>
+    <label for="volume">曲音量</label>
+    <input id="volume" type="range" min="0" max="1" step="0.01" value="0.7">
+  </div>
+
+  <section id="start" class="screen">
+    <div class="card">
+      <h1>SHADOW <span>TAIKO</span></h1>
+      <p>音声つきMP4で遊ぶ、ドン／カッの2ボタンリズムゲーム</p>
+
+      <div class="row">
+        <label>🎬 MP4
+          <input id="mediaFile" type="file" accept="video/mp4,video/*">
+        </label>
+      </div>
+
+      <div class="row">
+        <label>BPM
+          <input id="bpm" type="number" value="138" min="60" max="300" step="0.1">
+        </label>
+        <label>譜面ずらし (ms)
+          <input id="offset" type="number" value="0" step="10">
+        </label>
+        <label>譜面Seed
+          <input id="seed" type="text" value="834271" maxlength="32">
+        </label>
+      </div>
+
+      <div class="pickers" id="modePicker">
+        <button type="button" data-playmode="auto" class="selected">自動演奏</button>
+        <button type="button" data-playmode="manual">自分でプレイ</button>
+      </div>
+
+      <div class="pickers" id="difficultyPicker">
+        <button type="button" data-mode="easy" class="selected">初級</button>
+        <button type="button" data-mode="normal">中級</button>
+        <button type="button" data-mode="hard">上級</button>
+        <button type="button" data-mode="master" hidden>MASTER · 765</button>
+        <button type="button" data-mode="rush" hidden>2000 RUSH</button>
+      </div>
+
+      <div id="keyConfig">
+        <strong>⌨ キー設定</strong>
+        <div class="keyRows">
+          <div class="keyRow">
+            <strong>ドン</strong><span class="keyValue" id="keyValue0"></span>
+            <button type="button" data-bind="0">キー設定</button>
+          </div>
+          <div class="keyRow">
+            <strong>カッ</strong><span class="keyValue" id="keyValue1"></span>
+            <button type="button" data-bind="1">キー設定</button>
+          </div>
+        </div>
+        <div id="bindStatus" class="hint">初期設定：SPACE＝ドン ／ A＝カッ</div>
+      </div>
+
+      <div id="seSettings">
+        <strong>🔊 ヒットSE</strong>
+        <div class="row">
+          <label><input id="seEnabled" type="checkbox"> ドン／カッの追加SEを再生</label>
+          <label>SE音量
+            <input id="seVolume" type="range" min="0" max="1" step="0.01" value="0.28">
+          </label>
+        </div>
+        <div class="row">
+          <label>ドンSE <input id="donSeFile" type="file" accept="audio/*"></label>
+          <button id="previewDonBtn" type="button">ドン試聴</button>
+          <label>カッSE <input id="kaSeFile" type="file" accept="audio/*"></label>
+          <button id="previewKaBtn" type="button">カッ試聴</button>
+        </div>
+        <div id="seStatus" class="hint">
+          初期状態はSEオフ。読み込んだ音声はこのブラウザ内でのみ使用します。
+        </div>
+      </div>
+
+      <label class="playerModeOption">
+        <input id="playerMode" type="checkbox">
+        下部プレイヤーモード（譜面を再生バー付近に表示）
+      </label>
+
+      <div id="eggStatus" class="hint">Seedを入力すると秘密の要素が見つかるかも…</div>
+      <div id="loadStatus" class="hint">MP4を選択してください</div>
+      <div id="chartStatus" class="hint"></div>
+
+      <button id="playBtn" disabled>▶ PLAY — 曲の最初から</button>
+      <div class="actions">
+        <button id="importChartBtn" type="button" disabled>譜面をImport</button>
+        <button id="regenerateChartBtn" type="button" hidden>自動生成に戻す</button>
+      </div>
+      <input id="chartImportFile" type="file" accept="application/json,.json" hidden>
+
+      <div class="hint">
+        手動：設定キー／画面ボタン／ゲームパッドで操作<br>
+        PまたはESC：一時停止 ／ F：全画面
+      </div>
+    </div>
+  </section>
+
+  <section id="pauseScreen" class="screen" hidden>
+    <div class="card">
+      <h2>PAUSED</h2>
+      <p>つづきから再開するか、譜面を保存してタイトルへ戻れます。</p>
+      <div class="actions">
+        <button id="resumeBtn">▶ つづきから</button>
+        <button id="exportPauseBtn">⇩ 譜面をExport</button>
+        <button id="returnTitleBtn">⌂ タイトルへ</button>
+      </div>
+      <div id="pauseStatus" class="hint"></div>
+    </div>
+  </section>
+
+  <section id="endScreen" class="screen" hidden>
+    <div class="card">
+      <h2>FINISH!</h2>
+      <div id="result"></div>
+      <div class="actions">
+        <button id="exportEndBtn">⇩ 譜面をExport</button>
+        <button id="importEndBtn">譜面をImport</button>
+        <button id="replayBtn">↻ 最初からもう一度</button>
+        <button id="endTitleBtn">⌂ タイトルへ</button>
+      </div>
+      <div id="credits"></div>
+    </div>
+  </section>
+</div>
+
+<video id="video" playsinline preload="auto"></video>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const stage = $("stage");
+const video = $("video");
+const view = $("view");
+const vctx = view.getContext("2d");
+const fx = $("fx");
+const ctx = fx.getContext("2d");
+
+function fitStage() {
+  const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+  stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+addEventListener("resize", fitStage);
+fitStage();
+
+/* キー設定 */
+const KEY_SAVE = "shadow_taiko_keys_v4";
+const DEFAULT_KEYS = ["Space", "KeyA"];
+let keyBindings = [...DEFAULT_KEYS];
+let captureLane = null;
+
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY_SAVE));
+  if (Array.isArray(saved) && saved.length === 2 &&
+      saved[0] && saved[1] && saved[0] !== saved[1]) {
+    keyBindings = saved;
+  }
+} catch (_) {}
+
+function saveKeys() {
+  try { localStorage.setItem(KEY_SAVE, JSON.stringify(keyBindings)); } catch (_) {}
+}
+function formatKey(code) {
+  if (!code) return "未設定";
+  if (code === "Space") return "SPACE";
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  const names = {
+    ArrowUp:"↑", ArrowDown:"↓", ArrowLeft:"←", ArrowRight:"→",
+    Enter:"ENTER", ShiftLeft:"左SHIFT", ShiftRight:"右SHIFT",
+    ControlLeft:"左CTRL", ControlRight:"右CTRL"
+  };
+  return names[code] || code;
+}
+function renderKeyConfig() {
+  $("keyValue0").textContent = formatKey(keyBindings[0]);
+  $("keyValue1").textContent = formatKey(keyBindings[1]);
+  updateTouchKeys();
+}
+document.querySelectorAll("[data-bind]").forEach(button => {
+  button.addEventListener("click", () => {
+    captureLane = Number(button.dataset.bind);
+    $("bindStatus").textContent =
+      `${captureLane === 0 ? "ドン" : "カッ"}に割り当てるキーを押してください。ESCでキャンセル。`;
+  });
+});
+
+/* SE設定。初期状態オフ。カスタム音声データ自体は保存・共有しない */
+const SE_SAVE_KEY = "shadow_taiko_se_v2";
+let hitSeEnabled = false;
+let hitSeVolume = 0.28;
+let customHitSE = [null, null];
+
+try {
+  const savedSE = JSON.parse(localStorage.getItem(SE_SAVE_KEY));
+  if (savedSE) {
+    hitSeEnabled = Boolean(savedSE.enabled);
+    if (Number.isFinite(savedSE.volume)) {
+      hitSeVolume = Math.max(0, Math.min(1, savedSE.volume));
+    }
+  }
+} catch (_) {}
+
+$("seEnabled").checked = hitSeEnabled;
+$("seVolume").value = hitSeVolume;
+
+/* 難易度・隠しモード */
+const MODES = {
+  easy:   { step: 1,     quantile: 0.72, minGap: 0.38 },
+  normal: { step: 0.5,   quantile: 0.60, minGap: 0.20 },
+  hard:   { step: 0.25,  quantile: 0.48, minGap: 0.12 },
+  master: { step: 0.25,  quantile: 0.37, minGap: 0.105 },
+  rush:   { step: 0.125, quantile: 0.34, minGap: 0.085 }
+};
+
+const TRAVEL_TIME = 2;
+const HIT_X = 500;
+const NOTE_RIGHT_X = 1780;
+let NOTE_Y = 540;
+
+let playMode = "auto";
+let difficulty = "easy";
+let videoURL = null;
+let videoReady = false;
+let sourceFingerprint = null;
+let audioFeatures = null;
+let beatPhase = 0;
+let chart = [];
+let chartMode = "generated";
+let playing = false;
+let paused = false;
+let seeking = false;
+let resumeAfterSeek = false;
+
+let score = 0, combo = 0, maxCombo = 0;
+let perfects = 0, goods = 0, misses = 0;
+let frameId = 0;
+let hitParticles = [];
+let targetHitAt = -1;
+let targetHitColor = "#fff";
+let lastPadButtons = {};
+let hitAudio = null, hitGain = null, noiseBuffer = null;
+
+function bpm() {
+  return Math.min(300, Math.max(60, Number($("bpm").value) || 138));
+}
+function formatTime(seconds) {
+  seconds = Math.max(0, seconds || 0);
+  return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+}
+function goodWindow() {
+  return difficulty === "rush" ? 0.042 :
+         difficulty === "master" ? 0.075 : 0.12;
+}
+function perfectWindow() {
+  return difficulty === "rush" ? 0.022 :
+         difficulty === "master" ? 0.035 : 0.055;
+}
+function hashSeed(text) {
+  let h = 2166136261;
+  for (const ch of String(text || "0")) {
+    h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  }
+  return h >>> 0;
+}
+function mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function refreshSeedSecrets() {
+  const code = String($("seed").value).trim();
+  const allUnlocked = code === "143";
+  const masterUnlocked = allUnlocked || code === "765";
+  const rushUnlocked = allUnlocked || code === "2000";
+
+  $('[data-mode="master"]').hidden = !masterUnlocked;
+  $('[data-mode="rush"]').hidden = !rushUnlocked;
+
+  if (difficulty === "master" && !masterUnlocked) difficulty = "hard";
+  if (difficulty === "rush" && !rushUnlocked) difficulty = "hard";
+
+  document.querySelectorAll("#difficultyPicker button").forEach(button => {
+    button.classList.toggle("selected", button.dataset.mode === difficulty);
+  });
+
+  if (allUnlocked) {
+    $("eggStatus").textContent = "✦ 143 — I LOVE YOU：すべての隠し難易度を解放！";
+  } else if (code === "114514") {
+    $("eggStatus").textContent = "✦ SECRET：推定レベル Lv.8";
+  } else if (code === "1919810") {
+    $("eggStatus").textContent = "✦ SECRET：推定レベル Lv.10";
+  } else if (masterUnlocked) {
+    $("eggStatus").textContent = "✦ 765 MASTER 解放！";
+  } else if (rushUnlocked) {
+    $("eggStatus").textContent = "✦ 2000 RUSH 解放！";
+  } else {
+    $("eggStatus").textContent = "Seedを入力すると秘密の要素が見つかるかも…";
+  }
+}
+
+/* 音源ファイルの指紋。譜面Import時に同じMP4か照合 */
+async function fingerprintFile(file) {
+  const bytes = await file.arrayBuffer();
+
+  if (globalThis.crypto?.subtle) {
+    try {
+      const digest = await crypto.subtle.digest("SHA-256", bytes);
+      const hex = [...new Uint8Array(digest)]
+        .map(x => x.toString(16).padStart(2, "0")).join("");
+      return `sha256:${hex}`;
+    } catch (_) {}
+  }
+
+  let hash = 2166136261;
+  for (const byte of new Uint8Array(bytes)) {
+    hash = Math.imul(hash ^ byte, 16777619);
+  }
+  return `fnv1a32:${(hash >>> 0).toString(16)}:${bytes.byteLength}`;
+}
+
+/* 約10msごとに低・中・高域の立ち上がりを解析 */
+function analyzeDecodedAudio(buffer) {
+  const sr = buffer.sampleRate;
+  const hop = Math.max(128, Math.round(sr * 0.01));
+  const channels = Array.from(
+    { length: buffer.numberOfChannels },
+    (_, i) => buffer.getChannelData(i)
+  );
+  const frameCount = Math.ceil(buffer.length / hop);
+  const lowEnergy = new Float32Array(frameCount);
+  const midEnergy = new Float32Array(frameCount);
+  const highEnergy = new Float32Array(frameCount);
+
+  const aLow = 1 - Math.exp(-2 * Math.PI * 180 / sr);
+  const aMid = 1 - Math.exp(-2 * Math.PI * 1800 / sr);
+  let lowPass = 0, midPass = 0;
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    const start = frame * hop;
+    const end = Math.min(buffer.length, start + hop);
+    let lowSum = 0, midSum = 0, highSum = 0, count = 0;
+
+    for (let i = start; i < end; i++) {
+      let sample = 0;
+      for (const channel of channels) sample += channel[i];
+      sample /= channels.length;
+
+      lowPass += aLow * (sample - lowPass);
+      midPass += aMid * (sample - midPass);
+
+      const low = lowPass;
+      const mid = midPass - lowPass;
+      const high = sample - midPass;
+
+      lowSum += low * low;
+      midSum += mid * mid;
+      highSum += high * high;
+      count++;
+    }
+
+    lowEnergy[frame] = Math.sqrt(lowSum / Math.max(1, count));
+    midEnergy[frame] = Math.sqrt(midSum / Math.max(1, count));
+    highEnergy[frame] = Math.sqrt(highSum / Math.max(1, count));
+  }
+
+  function fluxFrom(energy) {
+    const flux = new Float32Array(energy.length);
+    for (let i = 1; i < energy.length; i++) {
+      flux[i] = Math.max(
+        0,
+        Math.log1p(energy[i] * 100) - Math.log1p(energy[i - 1] * 100)
+      );
+    }
+
+    const sorted = Array.from(flux).sort((a, b) => a - b);
+    const reference = sorted[Math.floor(sorted.length * 0.95)] || 1;
+    for (let i = 0; i < flux.length; i++) {
+      flux[i] = Math.min(1.5, flux[i] / reference);
+    }
+    return flux;
+  }
+
+  const low = fluxFrom(lowEnergy);
+  const mid = fluxFrom(midEnergy);
+  const high = fluxFrom(highEnergy);
+  const total = new Float32Array(frameCount);
+  for (let i = 0; i < frameCount; i++) total[i] = low[i] + mid[i] + high[i];
+
+  return { hopSeconds: hop / sr, duration: buffer.duration, low, mid, high, total };
+}
+function featurePeak(array, time) {
+  if (!audioFeatures) return 0;
+  const center = Math.round(time / audioFeatures.hopSeconds);
+  let peak = 0;
+  for (let i = center - 2; i <= center + 2; i++) {
+    if (i >= 0 && i < array.length) peak = Math.max(peak, array[i]);
+  }
+  return peak;
+}
+function estimateBeatPhase(features, beatLength) {
+  if (!features) return 0;
+  const scanStep = Math.max(0.01, features.hopSeconds * 2);
+  const scanEnd = Math.min(beatLength, features.duration);
+  const timeLimit = Math.min(30, features.duration);
+  let bestPhase = 0, bestScore = -Infinity;
+
+  for (let phase = 0; phase < scanEnd; phase += scanStep) {
+    let total = 0;
+    for (let t = phase; t < timeLimit; t += beatLength) {
+      total += featurePeak(features.total, t);
+    }
+    if (total > bestScore) {
+      bestScore = total;
+      bestPhase = phase;
+    }
+  }
+  return bestPhase;
+}
+
+function buildChart() {
+  if (!videoReady || chartMode === "imported") return;
+
+  const beatLength = 60 / bpm();
+  const mode = MODES[difficulty];
+  const interval = beatLength * mode.step;
+  const offsetSeconds = (Number($("offset").value) || 0) / 1000;
+  const end = Math.max(0, video.duration - 0.15);
+  const seededRandom = mulberry32(hashSeed($("seed").value));
+
+  chart = [];
+
+  if (!audioFeatures) {
+    const patterns = [
+      [0, 1, 0, 1], [0, 0, 1, 0],
+      [0, 1, 1, 0], [1, 0, 1, 1]
+    ];
+    let pattern = patterns[Math.floor(seededRandom() * patterns.length)];
+    let i = 0;
+
+    for (let time = TRAVEL_TIME + offsetSeconds; time < end; time += interval) {
+      if (i > 0 && i % 16 === 0) {
+        pattern = patterns[Math.floor(seededRandom() * patterns.length)];
+      }
+      chart.push({ time, lane: pattern[i % pattern.length], judged: false });
+      i++;
+    }
+  } else {
+    beatPhase = estimateBeatPhase(audioFeatures, beatLength);
+    const candidates = [];
+    const firstIndex = Math.max(
+      0,
+      Math.ceil((TRAVEL_TIME - beatPhase - offsetSeconds) / interval)
+    );
+
+    for (let i = firstIndex; ; i++) {
+      const time = beatPhase + offsetSeconds + i * interval;
+      if (time >= end) break;
+
+      const low = featurePeak(audioFeatures.low, time);
+      const mid = featurePeak(audioFeatures.mid, time);
+      const high = featurePeak(audioFeatures.high, time);
+      candidates.push({ time, low, mid, high, strength: low + mid + high });
+    }
+
+    if (candidates.length) {
+      const strengths = candidates.map(c => c.strength).sort((a, b) => a - b);
+      const threshold = strengths[Math.floor(mode.quantile * (strengths.length - 1))] || 0;
+      const selected = [];
+
+      candidates
+        .filter(c => c.strength >= threshold)
+        .sort((a, b) => b.strength - a.strength)
+        .forEach(c => {
+          if (!selected.some(n => Math.abs(n.time - c.time) < mode.minGap)) {
+            selected.push(c);
+          }
+        });
+
+      selected.sort((a, b) => a.time - b.time);
+
+      let previousLane = -1;
+      let sameLaneRun = 0;
+
+      chart = selected.map(c => {
+        const donScore = c.low * 0.75 + c.mid * 0.25;
+        const kaScore = c.high * 0.75 + c.mid * 0.25;
+        const confidence =
+          Math.abs(donScore - kaScore) / (donScore + kaScore + 0.001);
+
+        let lane;
+        if (confidence > 0.18) {
+          lane = donScore > kaScore ? 0 : 1;
+        } else {
+          const phase =
+            ((c.time - beatPhase) % beatLength + beatLength) % beatLength;
+          const onBeat =
+            Math.min(phase, beatLength - phase) < beatLength * 0.12;
+
+          lane = onBeat ? 0 : 1;
+          if (seededRandom() < 0.08) lane = 1 - lane;
+          if (lane === previousLane && sameLaneRun >= 3) lane = 1 - lane;
+        }
+
+        sameLaneRun = lane === previousLane ? sameLaneRun + 1 : 1;
+        previousLane = lane;
+        return { time: c.time, lane, judged: false };
+      });
+    }
+  }
+
+  updateChartInfo();
+}
+
+function estimateDifficulty() {
+  const code = String($("seed").value).trim();
+  if (code === "114514") return 8;
+  if (code === "1919810") return 10;
+  if (chart.length < 2 || !video.duration) return 1;
+
+  const nps = chart.length / video.duration;
+  let peakTwoSecond = 0, start = 0;
+
+  for (let i = 0; i < chart.length; i++) {
+    while (start < i && chart[i].time - chart[start].time > 2) start++;
+    peakTwoSecond = Math.max(peakTwoSecond, (i - start + 1) / 2);
+  }
+
+  const beat = 60 / bpm();
+  let fastCount = 0, switches = 0;
+
+  for (let i = 1; i < chart.length; i++) {
+    if (chart[i].time - chart[i - 1].time < beat * 0.30) fastCount++;
+    if (chart[i].lane !== chart[i - 1].lane) switches++;
+  }
+
+  const fastRatio = fastCount / Math.max(1, chart.length - 1);
+  const switchRatio = switches / Math.max(1, chart.length - 1);
+  const raw = 1.2 * nps + 0.35 * peakTwoSecond + 2 * fastRatio + switchRatio;
+
+  return Math.max(1, Math.min(10, Math.round(raw)));
+}
+function updateChartInfo() {
+  $("chartStatus").textContent = chart.length
+    ? `${chartMode === "imported" ? "Import譜面" : "生成譜面"}：${chart.length}ノーツ ／ 推定Lv.${estimateDifficulty()}（独自目安）`
+    : "譜面を作れませんでした。BPMや音源を確認してください。";
+}
+function setImportedLock(locked) {
+  $("bpm").disabled = locked;
+  $("offset").disabled = locked;
+  $("seed").disabled = locked;
+  document.querySelectorAll("#difficultyPicker button")
+    .forEach(button => { button.disabled = locked; });
+  $("regenerateChartBtn").hidden = !locked;
+}
+
+/* MP4読み込み */
+$("mediaFile").addEventListener("change", event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (videoURL) URL.revokeObjectURL(videoURL);
+  videoURL = URL.createObjectURL(file);
+  videoReady = false;
+  audioFeatures = null;
+  sourceFingerprint = null;
+  chartMode = "generated";
+  chart = [];
+  setImportedLock(false);
+
+  $("playBtn").disabled = true;
+  $("importChartBtn").disabled = true;
+  $("loadStatus").textContent = "MP4を読み込み中…";
+
+  video.onloadedmetadata = async () => {
+    videoReady = true;
+    $("loadStatus").textContent = "音声を解析中…";
+
+    try {
+      sourceFingerprint = await fingerprintFile(file);
+    } catch (_) {
+      sourceFingerprint = null;
+    }
+
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        const analysisContext = new AudioContextClass();
+        const decoded = await analysisContext.decodeAudioData(await file.arrayBuffer());
+        audioFeatures = analyzeDecodedAudio(decoded);
+        await analysisContext.close();
+      }
+    } catch (_) {
+      audioFeatures = null;
+    }
+
+    buildChart();
+    drawVideo();
+    $("playBtn").disabled = false;
+    $("importChartBtn").disabled = false;
+    $("loadStatus").textContent = audioFeatures
+      ? `読み込み完了：${formatTime(video.duration)} ／ 音声解析済み`
+      : `読み込み完了：${formatTime(video.duration)} ／ BPMグリッド譜面`;
+  };
+
+  video.onerror = () => {
+    videoReady = false;
+    $("loadStatus").textContent = "読み込めませんでした。別のMP4をお試しください。";
+  };
+
+  video.src = videoURL;
+  video.load();
+});
+
+function regenerateIfGenerated() {
+  if (chartMode === "generated") buildChart();
+}
+$("bpm").addEventListener("change", regenerateIfGenerated);
+$("offset").addEventListener("change", regenerateIfGenerated);
+$("seed").addEventListener("change", () => {
+  refreshSeedSecrets();
+  regenerateIfGenerated();
+});
+
+document.querySelectorAll("#difficultyPicker button").forEach(button => {
+  button.addEventListener("click", () => {
+    if (chartMode === "imported" || button.hidden) return;
+    difficulty = button.dataset.mode;
+    document.querySelectorAll("#difficultyPicker button")
+      .forEach(b => b.classList.toggle("selected", b === button));
+    buildChart();
+  });
+});
+document.querySelectorAll("#modePicker button").forEach(button => {
+  button.addEventListener("click", () => {
+    playMode = button.dataset.playmode;
+    document.querySelectorAll("#modePicker button")
+      .forEach(b => b.classList.toggle("selected", b === button));
+    updateTouchKeys();
+  });
+});
+
+/* 描画 */
+function drawVideo() {
+  vctx.fillStyle = "#050505";
+  vctx.fillRect(0, 0, 1920, 1080);
+  if (!videoReady || !video.videoWidth) return;
+
+  const scale = Math.min(1920 / video.videoWidth, 1080 / video.videoHeight);
+  const w = video.videoWidth * scale;
+  const h = video.videoHeight * scale;
+  vctx.drawImage(video, (1920 - w) / 2, (1080 - h) / 2, w, h);
+}
+function roundRect(c, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function drawRhythm(now) {
+  ctx.clearRect(0, 0, 1920, 1080);
+
+  ctx.fillStyle = "rgba(0,0,0,.38)";
+  roundRect(ctx, HIT_X - 60, NOTE_Y - 76, NOTE_RIGHT_X - HIT_X + 120, 152, 28);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255,255,255,.23)";
+  roundRect(ctx, HIT_X, NOTE_Y - 7, NOTE_RIGHT_X - HIT_X, 14, 7);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(HIT_X, NOTE_Y, 60, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,.12)";
+  ctx.fill();
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = "#fff";
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(HIT_X, NOTE_Y, 48, 0, Math.PI * 2);
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = "#ff3b55";
+  ctx.stroke();
+
+  for (const note of chart) {
+    if (note.judged) continue;
+    const until = note.time - now;
+    if (until > TRAVEL_TIME) continue;
+
+    if (until < -goodWindow()) {
+      note.judged = true;
+      combo = 0;
+      misses++;
+      updateHud();
+      showJudge("miss");
+      continue;
+    }
+
+    const x = HIT_X + (until / TRAVEL_TIME) * (NOTE_RIGHT_X - HIT_X);
+    const color = note.lane === 0 ? "#ff3b55" : "#55aaff";
+
+    ctx.beginPath();
+    ctx.arc(x, NOTE_Y, 38, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#fff";
+    ctx.stroke();
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 18px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText(note.lane === 0 ? "ドン" : "カッ", x, NOTE_Y + 6);
+  }
+
+  drawHitEffects(performance.now());
+
+  ctx.textAlign = "center";
+  ctx.font = "bold 24px system-ui";
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "#000";
+  ctx.fillStyle = "#fff";
+
+  const don = `ドン  ${formatKey(keyBindings[0])}`;
+  const ka = `カッ  ${formatKey(keyBindings[1])}`;
+  ctx.strokeText(don, HIT_X, NOTE_Y + 115);
+  ctx.fillText(don, HIT_X, NOTE_Y + 115);
+  ctx.strokeText(ka, HIT_X, NOTE_Y + 150);
+  ctx.fillText(ka, HIT_X, NOTE_Y + 150);
+}
+function drawHitEffects(now) {
+  const age = now - targetHitAt;
+  if (age >= 0 && age < 260) {
+    const p = age / 260;
+    ctx.save();
+    ctx.globalAlpha = 1 - p;
+    ctx.strokeStyle = targetHitColor;
+    ctx.lineWidth = 12 * (1 - p) + 2;
+    ctx.shadowColor = targetHitColor;
+    ctx.shadowBlur = 30;
+    ctx.beginPath();
+    ctx.arc(HIT_X, NOTE_Y, 55 + 65 * p, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  hitParticles = hitParticles.filter(p => now - p.born < p.life);
+  for (const p of hitParticles) {
+    const t = (now - p.born) / 1000;
+    const alpha = 1 - (now - p.born) / p.life;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(p.x + p.vx * t, p.y + p.vy * t, 7 * alpha + 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* 効果音 */
+function initHitAudio() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass || hitAudio) return;
+
+  try {
+    hitAudio = new AudioContextClass({ latencyHint: "interactive" });
+  } catch (_) {
+    hitAudio = new AudioContextClass();
+  }
+
+  hitGain = hitAudio.createGain();
+  hitGain.gain.value = hitSeVolume;
+  hitGain.connect(hitAudio.destination);
+
+  const length = Math.floor(hitAudio.sampleRate * 0.15);
+  noiseBuffer = hitAudio.createBuffer(1, length, hitAudio.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+}
+function playHitSound(lane, forcePreview = false) {
+  if (!hitAudio || !hitGain) return;
+  if (!hitSeEnabled && !forcePreview) return;
+
+  const t = hitAudio.currentTime + 0.003;
+
+  if (customHitSE[lane]) {
+    const source = hitAudio.createBufferSource();
+    source.buffer = customHitSE[lane];
+    source.connect(hitGain);
+    source.start(t);
+    return;
+  }
+
+  if (lane === 0) {
+    const osc = hitAudio.createOscillator();
+    const gain = hitAudio.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(145, t);
+    osc.frequency.exponentialRampToValueAtTime(55, t + 0.11);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(0.7, t + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    osc.connect(gain);
+    gain.connect(hitGain);
+    osc.start(t);
+    osc.stop(t + 0.14);
+  } else {
+    const source = hitAudio.createBufferSource();
+    const filter = hitAudio.createBiquadFilter();
+    const gain = hitAudio.createGain();
+    source.buffer = noiseBuffer;
+    filter.type = "highpass";
+    filter.frequency.value = 1800;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(0.35, t + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(hitGain);
+    source.start(t);
+    source.stop(t + 0.08);
+  }
+}
+function emitHitEffect(lane) {
+  const color = lane === 0 ? "#ff3b55" : "#55aaff";
+  const now = performance.now();
+  targetHitAt = now;
+  targetHitColor = color;
+
+  for (let i = 0; i < 16; i++) {
+    const angle = Math.PI * 2 * i / 16;
+    const speed = 90 + Math.random() * 240;
+    hitParticles.push({
+      x: HIT_X, y: NOTE_Y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      born: now, life: 360, color
+    });
+  }
+  if (playMode === "manual" && navigator.vibrate) navigator.vibrate(18);
+}
+function saveSESettings() {
+  try {
+    localStorage.setItem(SE_SAVE_KEY, JSON.stringify({
+      enabled: hitSeEnabled,
+      volume: hitSeVolume
+    }));
+  } catch (_) {}
+}
+async function loadCustomSE(file, lane) {
+  if (!file) return;
+  initHitAudio();
+
+  if (!hitAudio) {
+    $("seStatus").textContent = "このブラウザではカスタムSEを読み込めません。";
+    return;
+  }
+
+  try {
+    customHitSE[lane] = await hitAudio.decodeAudioData(await file.arrayBuffer());
+    $("seStatus").textContent =
+      `${lane === 0 ? "ドン" : "カッ"}SEを読み込みました。音声はこのページ内だけで使用されます。`;
+  } catch (_) {
+    $("seStatus").textContent =
+      "音声を読み込めませんでした。別の音声形式をお試しください。";
+  }
+}
+async function previewSE(lane) {
+  initHitAudio();
+  if (!hitAudio) return;
+  try {
+    await hitAudio.resume();
+    playHitSound(lane, true);
+  } catch (_) {}
+}
+
+/* 判定 */
+function updateHud() {
+  $("scoreVal").textContent = score;
+  $("comboVal").textContent = combo;
+}
+function showJudge(kind) {
+  const el = $("judge");
+  el.className = "";
+  void el.offsetWidth;
+  el.textContent = kind === "perfect" ? "PERFECT" :
+                   kind === "good" ? "GOOD" : "MISS";
+  el.className = `show ${kind}`;
+}
+function awardNote(note, kind) {
+  note.judged = true;
+  combo++;
+  maxCombo = Math.max(maxCombo, combo);
+  if (kind === "perfect") perfects++;
+  else goods++;
+  score += (kind === "perfect" ? 100 : 50) + Math.min(combo, 50) * 2;
+  updateHud();
+  emitHitEffect(note.lane);
+  playHitSound(note.lane);
+}
+function hitLane(lane) {
+  if (!playing || paused || playMode !== "manual") return;
+
+  const now = video.currentTime;
+  let target = null, nearest = Infinity;
+
+  for (const note of chart) {
+    if (note.judged || note.lane !== lane) continue;
+    const d = Math.abs(note.time - now);
+    if (d < nearest) { nearest = d; target = note; }
+    if (note.time - now > goodWindow()) break;
+  }
+
+  if (!target || nearest > goodWindow()) return;
+  const kind = nearest <= perfectWindow() ? "perfect" : "good";
+  awardNote(target, kind);
+  showJudge(kind);
+}
+function updateTouchKeys() {
+  const el = $("touchKeys");
+  if (playMode !== "manual") {
+    el.classList.remove("on");
+    el.innerHTML = "";
+    return;
+  }
+
+  el.innerHTML =
+    `<button type="button" data-lane="0">ドン<br>${formatKey(keyBindings[0])}</button>` +
+    `<button type="button" data-lane="1">カッ<br>${formatKey(keyBindings[1])}</button>`;
+
+  el.classList.add("on");
+  el.querySelectorAll("button").forEach(button => {
+    button.onpointerdown = e => {
+      e.preventDefault();
+      hitLane(Number(button.dataset.lane));
+    };
+  });
+}
+
+/* メインループ */
+function drawFrame() {
+  if (!playing || paused || seeking) return;
+
+  const now = video.currentTime || 0;
+  if (now >= video.duration) { finish(); return; }
+
+  drawVideo();
+
+  if (playMode === "auto") {
+    for (const note of chart) {
+      if (note.time > now) break;
+      if (!note.judged) awardNote(note, "perfect");
+    }
+  }
+
+  drawRhythm(now);
+  $("clock").textContent = `${formatTime(now)} / ${formatTime(video.duration)}`;
+
+  if (video.duration) {
+    $("seekBar").value = Math.round(now / video.duration * 1000);
+    $("progress").style.width = `${Math.min(100, now / video.duration * 100)}%`;
+  }
+
+  frameId = requestAnimationFrame(drawFrame);
+}
+
+/* 再生・一時停止・タイトル復帰 */
+async function playFromBeginning() {
+  if (!videoReady || !chart.length) return;
+
+  cancelAnimationFrame(frameId);
+  chart.forEach(note => { note.judged = false; });
+  hitParticles = [];
+  targetHitAt = -1;
+  score = combo = maxCombo = perfects = goods = misses = 0;
+  updateHud();
+
+  initHitAudio();
+  if (hitAudio?.state === "suspended") {
+    try { await hitAudio.resume(); } catch (_) {}
+  }
+
+  $("start").hidden = true;
+  $("pauseScreen").hidden = true;
+  $("endScreen").hidden = true;
+  $("hud").classList.add("on");
+  $("pauseBtn").hidden = false;
+  $("pauseBtn").textContent = "Ⅱ 一時停止";
+  $("progress").style.width = "0%";
+  $("seekBar").value = 0;
+
+  video.volume = Number($("volume").value);
+  video.currentTime = 0;
+  playing = true;
+  paused = false;
+  updateTouchKeys();
+
+  try {
+    await video.play();
+    frameId = requestAnimationFrame(drawFrame);
+  } catch (_) {
+    playing = false;
+    $("start").hidden = false;
+    $("loadStatus").textContent = "動画を再生できませんでした。MP4を確認してください。";
+  }
+}
+function pauseGame() {
+  if (!playing || paused) return;
+  paused = true;
+  video.pause();
+  cancelAnimationFrame(frameId);
+  $("pauseScreen").hidden = false;
+  $("pauseBtn").textContent = "▶ つづきから";
+}
+async function resumeGame() {
+  if (!playing || !paused) return;
+  $("pauseScreen").hidden = true;
+  paused = false;
+  try {
+    await video.play();
+    $("pauseBtn").textContent = "Ⅱ 一時停止";
+    frameId = requestAnimationFrame(drawFrame);
+  } catch (_) {
+    pauseGame();
+  }
+}
+function returnToTitle() {
+  playing = false;
+  paused = false;
+  cancelAnimationFrame(frameId);
+  video.pause();
+  if (videoReady) video.currentTime = 0;
+
+  $("pauseScreen").hidden = true;
+  $("endScreen").hidden = true;
+  $("start").hidden = false;
+  $("pauseBtn").hidden = true;
+  $("hud").classList.remove("on");
+  $("touchKeys").classList.remove("on");
+  $("progress").style.width = "0%";
+  $("seekBar").value = 0;
+  $("clock").textContent = "0:00";
+  ctx.clearRect(0, 0, 1920, 1080);
+  drawVideo();
+}
+function finish() {
+  playing = false;
+  paused = false;
+  cancelAnimationFrame(frameId);
+  video.pause();
+
+  $("pauseBtn").hidden = true;
+  $("hud").classList.remove("on");
+  $("touchKeys").classList.remove("on");
+  $("progress").style.width = "100%";
+  ctx.clearRect(0, 0, 1920, 1080);
+
+  const accuracy = chart.length
+    ? ((perfects + goods * 0.5) / chart.length * 100).toFixed(1)
+    : "0.0";
+  const labels = {
+    easy:"初級", normal:"中級", hard:"上級",
+    master:"MASTER", rush:"2000 RUSH"
+  };
+
+  $("result").innerHTML =
+    `${playMode === "auto" ? "自動演奏" : "手動プレイ"}・${labels[difficulty]}<br>` +
+    `推定Lv. <b>${estimateDifficulty()}</b>（独自目安）<br>` +
+    `SCORE <b>${score}</b> ／ MAX COMBO <b>${maxCombo}</b><br>` +
+    `PERFECT <b>${perfects}</b> ／ GOOD <b>${goods}</b> ／ MISS <b>${misses}</b><br>` +
+    `精度 <b>${accuracy}%</b>`;
+
+  $("credits").innerHTML =
+    "東方Project 二次創作（非公式ファン作品）<br>" +
+    "[Alstroemeria Records] Bad Apple!! feat.nomico " +
+    "(Shadow Animation Version) [ACVS.008_Tr.00]<br>" +
+    "※選択されたローカルMP4を再生しています。";
+
+  $("endScreen").hidden = false;
+}
+
+/* 譜面JSON Export／Import */
+function exportChart() {
+  if (!videoReady || !sourceFingerprint || !chart.length) {
+    $("chartStatus").textContent = "Exportできる譜面がありません。";
+    $("pauseStatus").textContent = "Exportできる譜面がありません。";
+    return;
+  }
+
+  const data = {
+    format: "shadow-taiko-chart",
+    version: 1,
+    source: {
+      fingerprint: sourceFingerprint,
+      durationMs: Math.round(video.duration * 1000)
+    },
+    generator: {
+      version: audioFeatures ? "audio-grid-1" : "bpm-grid-1",
+      seed: $("seed").value,
+      bpm: bpm(),
+      offsetMs: Number($("offset").value) || 0,
+      difficulty
+    },
+    notes: chart.map(note => [Math.round(note.time * 1000), note.lane])
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `shadow-taiko-${difficulty}-${Date.now()}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  $("chartStatus").textContent = "譜面JSONをExportしました。";
+  $("pauseStatus").textContent = "譜面JSONをExportしました。";
+}
+function openImport() {
+  if (!videoReady) {
+    $("chartStatus").textContent = "先にMP4を読み込んでください。";
+    return;
+  }
+  $("chartImportFile").click();
+}
+$("chartImportFile").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const data = JSON.parse(await file.text());
+
+    if (data.format !== "shadow-taiko-chart" ||
+        data.version !== 1 || !Array.isArray(data.notes)) {
+      throw new Error("対応していない譜面ファイルです。");
+    }
+    if (!sourceFingerprint || data.source?.fingerprint !== sourceFingerprint) {
+      throw new Error("音源が一致しません。同じMP4を読み込んでください。");
+    }
+
+    const imported = data.notes.map(row => {
+      if (!Array.isArray(row) || !Number.isFinite(row[0]) ||
+          ![0, 1].includes(row[1])) {
+        throw new Error("譜面データの形式が正しくありません。");
+      }
+      const time = row[0] / 1000;
+      if (time < 0 || time >= video.duration) {
+        throw new Error("譜面の時間がMP4の長さを超えています。");
+      }
+      return { time, lane: row[1], judged: false };
+    });
+
+    if (!imported.length) throw new Error("譜面にノーツがありません。");
+
+    if (data.generator?.bpm) $("bpm").value = data.generator.bpm;
+    if (data.generator?.offsetMs != null) $("offset").value = data.generator.offsetMs;
+    if (data.generator?.seed != null) $("seed").value = data.generator.seed;
+    refreshSeedSecrets();
+
+    const importedDifficulty = data.generator?.difficulty;
+    if (!MODES[importedDifficulty]) {
+      throw new Error("譜面の難易度設定を認識できません。");
+    }
+    if (importedDifficulty === "master" &&
+        !["765", "143"].includes(String($("seed").value).trim())) {
+      throw new Error("MASTER譜面のSeedが一致しません。");
+    }
+    if (importedDifficulty === "rush" &&
+        !["2000", "143"].includes(String($("seed").value).trim())) {
+      throw new Error("RUSH譜面のSeedが一致しません。");
+    }
+
+    chart = imported.sort((a, b) => a.time - b.time);
+    difficulty = importedDifficulty;
+    chartMode = "imported";
+
+    document.querySelectorAll("#difficultyPicker button").forEach(button => {
+      button.classList.toggle("selected", button.dataset.mode === difficulty);
+    });
+    setImportedLock(true);
+
+    playing = false;
+    paused = false;
+    video.pause();
+    video.currentTime = 0;
+    $("endScreen").hidden = true;
+    $("pauseScreen").hidden = true;
+    $("start").hidden = false;
+    updateChartInfo();
+    $("chartStatus").textContent =
+      `Import完了：${chart.length}ノーツ。同じ譜面でプレイできます。`;
+  } catch (error) {
+    $("chartStatus").textContent = error.message || "譜面を読み込めませんでした。";
+  } finally {
+    event.target.value = "";
+  }
+});
+
+/* 下部プレイヤーモード */
+function updatePlayerMode() {
+  const enabled = $("playerMode").checked;
+  NOTE_Y = enabled ? 820 : 540;
+  $("seekBar").classList.toggle("on", enabled);
+  $("progress").style.display = enabled ? "none" : "block";
+}
+function beginSeek() {
+  if (!videoReady || seeking) return;
+  seeking = true;
+  resumeAfterSeek = playing && !paused;
+  cancelAnimationFrame(frameId);
+  if (resumeAfterSeek) video.pause();
+}
+$("playerMode").addEventListener("change", updatePlayerMode);
+$("seekBar").addEventListener("pointerdown", beginSeek);
+$("seekBar").addEventListener("input", () => {
+  if (!videoReady) return;
+  if (!seeking) beginSeek();
+
+  const time = Number($("seekBar").value) / 1000 * video.duration;
+  video.currentTime = time;
+  drawVideo();
+  $("clock").textContent = `${formatTime(time)} / ${formatTime(video.duration)}`;
+});
+$("seekBar").addEventListener("change", async () => {
+  if (!videoReady) return;
+
+  const time = video.currentTime;
+  chart.forEach(note => { note.judged = note.time < time; });
+  score = combo = maxCombo = perfects = goods = misses = 0;
+  updateHud();
+  seeking = false;
+
+  if (resumeAfterSeek) {
+    resumeAfterSeek = false;
+    try {
+      await video.play();
+      frameId = requestAnimationFrame(drawFrame);
+    } catch (_) {
+      pauseGame();
+    }
+  }
+});
+
+/* キー操作 */
+addEventListener("keydown", event => {
+  if (captureLane !== null) {
+    event.preventDefault();
+
+    if (event.code === "Escape") {
+      captureLane = null;
+      $("bindStatus").textContent = "キー設定をキャンセルしました。";
+      return;
+    }
+    if (event.repeat) return;
+
+    const other = captureLane === 0 ? 1 : 0;
+    if (event.code === keyBindings[other]) {
+      $("bindStatus").textContent =
+        "そのキーはもう一方に設定されています。別のキーを押してください。";
+      return;
+    }
+
+    keyBindings[captureLane] = event.code;
+    saveKeys();
+    $("bindStatus").textContent =
+      `${captureLane === 0 ? "ドン" : "カッ"}を${formatKey(event.code)}に設定しました。`;
+    captureLane = null;
+    renderKeyConfig();
+    return;
+  }
+
+  if (playing && !paused && playMode === "manual") {
+    const lane = keyBindings.indexOf(event.code);
+    if (lane >= 0) {
+      event.preventDefault();
+      if (!event.repeat) hitLane(lane);
+      return;
+    }
+  }
+
+  if (event.code === "KeyF") {
+    $("fullBtn").click();
+  } else if ((event.code === "KeyP" || event.code === "Escape") && playing) {
+    event.preventDefault();
+    if (paused) resumeGame();
+    else pauseGame();
+  }
+});
+
+/* ゲームパッド。STACK!設定があれば最初の2ボタンを利用 */
+let padBindings = [0, 1];
+try {
+  const saved = JSON.parse(localStorage.getItem("stackpv_sugiyama_v1"));
+  if (Array.isArray(saved?.padBindings) && saved.padBindings.length >= 2) {
+    padBindings = saved.padBindings.slice(0, 2);
+  }
+} catch (_) {}
+
+function pollGamepads() {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+
+  for (const pad of pads) {
+    if (!pad) continue;
+    const previous = lastPadButtons[pad.index] || [];
+
+    for (let lane = 0; lane < 2; lane++) {
+      const index = padBindings[lane];
+      const button = pad.buttons[index];
+      const pressed = Boolean(button && (button.pressed || button.value > 0.5));
+
+      if (pressed && !previous[index] && playing && !paused &&
+          playMode === "manual") {
+        hitLane(lane);
+      }
+      previous[index] = pressed;
+    }
+    lastPadButtons[pad.index] = previous;
+  }
+
+  requestAnimationFrame(pollGamepads);
+}
+
+/* UI接続 */
+$("playBtn").addEventListener("click", playFromBeginning);
+$("replayBtn").addEventListener("click", playFromBeginning);
+$("pauseBtn").addEventListener("click", () => paused ? resumeGame() : pauseGame());
+$("resumeBtn").addEventListener("click", resumeGame);
+$("returnTitleBtn").addEventListener("click", returnToTitle);
+$("endTitleBtn").addEventListener("click", returnToTitle);
+
+$("exportPauseBtn").addEventListener("click", exportChart);
+$("exportEndBtn").addEventListener("click", exportChart);
+$("importChartBtn").addEventListener("click", openImport);
+$("importEndBtn").addEventListener("click", openImport);
+
+$("regenerateChartBtn").addEventListener("click", () => {
+  chartMode = "generated";
+  setImportedLock(false);
+  buildChart();
+  $("chartStatus").textContent = "自動生成譜面に戻しました。";
+});
+
+$("seEnabled").addEventListener("change", () => {
+  hitSeEnabled = $("seEnabled").checked;
+  saveSESettings();
+  $("seStatus").textContent = hitSeEnabled
+    ? "ヒットSEオン。追加音声がなければ生成SEを使います。"
+    : "ヒットSEオフ。判定表示とヒット演出はそのまま動きます。";
+});
+$("seVolume").addEventListener("input", () => {
+  hitSeVolume = Number($("seVolume").value);
+  if (hitGain) hitGain.gain.value = hitSeVolume;
+  saveSESettings();
+});
+$("donSeFile").addEventListener("change", event =>
+  loadCustomSE(event.target.files?.[0], 0)
+);
+$("kaSeFile").addEventListener("change", event =>
+  loadCustomSE(event.target.files?.[0], 1)
+);
+$("previewDonBtn").addEventListener("click", () => previewSE(0));
+$("previewKaBtn").addEventListener("click", () => previewSE(1));
+
+$("volume").addEventListener("input", () => {
+  video.volume = Number($("volume").value);
+});
+$("fullBtn").addEventListener("click", () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+  else document.exitFullscreen?.();
+});
+
+renderKeyConfig();
+refreshSeedSecrets();
+updatePlayerMode();
+drawVideo();
+requestAnimationFrame(pollGamepads);
+</script>
+</body>
+</html>
